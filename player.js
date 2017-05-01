@@ -1,65 +1,65 @@
 class Player {
-  constructor() {
+  constructor(tetris) {
+    this.DROP_SLOW = 1000;
+    this.DROP_FAST = 50;
+
+    this.tetris = tetris;
+    this.arena = tetris.arena;
 
     this.dropCounter = 0;
-    this.dropInterval = 1000;
+    this.dropInterval = this.DROP_SLOW;
 
     this.pos = {x: 0, y: 0};
     this.matrix = null;
     this.score = 0;
-  }
 
-  move(dir) {
-    this.pos.x += dir;
-    if (collide(arena, this)) {
-      this.pos.x -= dir;
-    }
-  }
-
-  rotate(dir) {
-      const pos = this.pos.x;
-      let offset = 1;
-      this._rotateMatrix(this.matrix, dir);
-      while (collide(arena, this)) {
-        this.pos.x += offset;
-        offset = -(offset + (offset > 0 ? 1 : -1));
-        if (offset > this.matrix[0].length) {
-          this._rotateMatrix(this.matrix, -dir);
-          this.pos.x = pos;
-          return;
-        }
-      }
+    this.reset();
   }
 
   drop() {
     this.pos.y++;
-    if (collide(arena, this)) {
+    if (this.arena.collide(this)) {
       this.pos.y--;
-      merge(arena.matrix, this);
+      this.arena.merge(this);
       this.reset();
-      arena.sweep();
-      updateScore();
+      this.score += this.arena.sweep();
+      this.tetris.updateScore(this.score);
     }
     this.dropCounter = 0;
   }
 
-  update(deltaTime) {
-    this.dropCounter += deltaTime;
-    if (this.dropCounter > this.dropInterval) {
-      this.drop();
+  move(dir) {
+    this.pos.x += dir;
+    if (this.arena.collide(this)) {
+      this.pos.x -= dir;
     }
   }
 
   reset() {
-    const pieces = 'TJLOSZI';
+    const pieces = 'ILJOTSZ';
     this.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
     this.pos.y = 0;
-    this.pos.x = (arena.matrix[0].length / 2 | 0) -
-                 (arena.matrix[0].length / 2 | 0);
-    if (collide(arena, this)) {
-      arena.clear();
+    this.pos.x = (this.arena.matrix[0].length / 2 | 0) -
+                 (this.matrix[0].length / 2 | 0);
+    if (this.arena.collide(this)) {
+      this.arena.clear();
       this.score = 0;
       updateScore();
+    }
+  }
+
+  rotate(dir) {
+    const pos = this.pos.x;
+    let offset = 1;
+    this._rotateMatrix(this.matrix, dir);
+    while (this.arena.collide(this)) {
+      this.pos.x += offset;
+      offset = -(offset + (offset > 0 ? 1 : -1));
+      if (offset > this.matrix[0].length) {
+        this._rotateMatrix(this.matrix, -dir);
+        this.pos.x = pos;
+        return;
+      }
     }
   }
 
@@ -80,6 +80,13 @@ class Player {
       matrix.forEach(row => row.reverse());
     } else {
       matrix.reverse();
+    }
+  }
+
+  update(deltaTime) {
+    this.dropCounter += deltaTime;
+    if (this.dropCounter > this.dropInterval) {
+      this.drop();
     }
   }
 }
